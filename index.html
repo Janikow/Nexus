@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus — Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     AUTH SCREEN
+═══════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">N</div>
+      <span>Nexus</span>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab"        onclick="switchTab('register')">Create Account</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="login-form">
+      <div class="field">
+        <label>Username</label>
+        <input id="login-user" type="text" placeholder="your username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" onclick="handleLogin()">Sign In</button>
+      <div class="auth-error" id="login-error"></div>
+    </div>
+
+    <!-- Register form -->
+    <div id="register-form" style="display:none">
+      <div class="field">
+        <label>Username</label>
+        <input id="reg-user" type="text" placeholder="choose a username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="reg-pass" type="password" placeholder="create a password" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>Confirm Password</label>
+        <input id="reg-pass2" type="password" placeholder="repeat password" autocomplete="new-password">
+      </div>
+      <button class="btn-primary" onclick="handleRegister()">Create Account</button>
+      <div class="auth-error" id="reg-error"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Server / group bar -->
+  <div id="server-bar">
+    <div class="server-icon active" id="home-icon" onclick="selectServer('__home__')" title="Home">🏠</div>
+    <div class="server-divider"></div>
+    <div id="server-icons"></div>
+    <div style="margin-top:auto"></div>
+    <div class="add-server" onclick="openCreateGroup()" title="Create Group">+</div>
+  </div>
+
+  <!-- Channels / DM sidebar -->
+  <div id="channels-panel">
+    <div class="server-header">
+      <span class="server-name" id="server-name-label">Home</span>
+    </div>
+    <div id="channels-list" style="overflow-y:auto; flex:1; padding:8px 0;"></div>
+
+    <!-- Current-user panel at the bottom -->
+    <div class="user-panel">
+      <div class="user-avatar-sm c0" id="current-avatar">
+        <span id="current-avatar-letter">?</span>
+        <div class="status-dot"></div>
+      </div>
+      <div class="user-info">
+        <div class="uname"   id="current-username">User</div>
+        <div class="ustatus">Online</div>
+      </div>
+      <button class="icon-btn" onclick="logout()" title="Sign Out">⏻</button>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div id="chat-area">
+
+    <!-- Shown when no channel is selected -->
+    <div id="no-channel" class="empty-state">
+      <div class="big-icon">💬</div>
+      <h3>Welcome to Nexus</h3>
+      <p>Select a channel or start a conversation to begin chatting.</p>
+    </div>
+
+    <!-- Active channel view -->
+    <div id="channel-view" style="display:none; flex-direction:column; height:100%;">
+      <div class="chat-header">
+        <span class="ch-label" id="ch-type-icon">#</span>
+        <span class="ch-name"  id="ch-name-display">general</span>
+        <span class="ch-desc"  id="ch-desc-display"></span>
+        <div class="header-actions">
+          <button class="icon-btn" id="members-toggle-btn" onclick="toggleMembers()" title="Members">👥</button>
+        </div>
+      </div>
+
+      <div id="messages"></div>
+
+      <div class="chat-input-area">
+        <div class="input-box">
+          <textarea
+            id="msg-input"
+            rows="1"
+            placeholder="Message #general"
+            onkeydown="handleKey(event)"
+            oninput="autoResize(this)"
+          ></textarea>
+          <button class="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Members panel -->
+  <div id="members-panel">
+    <h4>Members</h4>
+    <div id="members-list"></div>
+  </div>
+
+</div><!-- #app -->
+
+
+<!-- ═══════════════════════════════════════
+     MODALS
+═══════════════════════════════════════ -->
+
+<!-- Create Group -->
+<div id="create-group-modal" style="display:none"
+     class="modal-overlay" onclick="closeModal(event,'create-group-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Create a Group</h3>
+    <p>Give your group a name and invite friends to join.</p>
+    <div class="field">
+      <label>Group Name</label>
+      <input id="group-name-input" type="text" placeholder="e.g. Gaming Squad, Study Buddies…">
+    </div>
+    <div class="field">
+      <label>Description (optional)</label>
+      <input id="group-desc-input" type="text" placeholder="What's this group about?">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost"       onclick="document.getElementById('create-group-modal').style.display='none'">Cancel</button>
+      <button class="btn-primary-sm"  onclick="createGroup()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Join Group -->
+<div id="join-group-modal" style="display:none"
+     class="modal-overlay" onclick="closeModal(event,'join-group-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Join a Group</h3>
+    <p>Enter an invite code to join an existing group.</p>
+    <div class="field">
+      <label>Invite Code</label>
+      <input id="join-code-input" type="text" placeholder="e.g. abc123">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost"      onclick="document.getElementById('join-group-modal').style.display='none'">Cancel</button>
+      <button class="btn-primary-sm" onclick="joinGroup()">Join</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
